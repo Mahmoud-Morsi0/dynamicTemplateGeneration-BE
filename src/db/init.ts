@@ -1,44 +1,39 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import Database from 'better-sqlite3'
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { templates, templateVersions } from './schema'
+import * as schema from './schema'
+import { env } from '../config/env'
+import { logger } from '../utils/logger'
+import fs from 'fs'
+import path from 'path'
 
-const sqlite = new Database('./storage/app.db')
-const db = drizzle(sqlite)
+// Ensure storage directory exists
+const storageDir = path.dirname(env.DB_URL.replace('file:', ''))
+if (!fs.existsSync(storageDir)) {
+    fs.mkdirSync(storageDir, { recursive: true })
+    logger.info('Created storage directory:', storageDir)
+}
 
-// Create tables manually
-async function initDatabase() {
+// Initialize database
+const sqlite = new Database(env.DB_URL.replace('file:', ''))
+sqlite.pragma('journal_mode = WAL')
+
+export const db = drizzle(sqlite, { schema })
+
+// Auto-initialize database in development
+if (env.NODE_ENV === 'development') {
     try {
-        // Create templates table
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS templates (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                language TEXT NOT NULL DEFAULT 'en',
-                created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-                updated_at INTEGER NOT NULL DEFAULT (unixepoch())
-            )
-        `)
+        // Test if tables exist by trying a simple query
+        const result = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
 
-        // Create template_versions table
-        await db.run(`
-            CREATE TABLE IF NOT EXISTS template_versions (
-                id TEXT PRIMARY KEY,
-                template_id TEXT REFERENCES templates(id),
-                version INTEGER NOT NULL DEFAULT 1,
-                file_path TEXT NOT NULL,
-                file_hash TEXT NOT NULL UNIQUE,
-                fields_spec TEXT NOT NULL,
-                created_at INTEGER NOT NULL DEFAULT (unixepoch())
-            )
-        `)
-
-        console.log('Database tables created successfully!')
+        if (result.length === 0) {
+            logger.info('Database appears empty, tables may need to be created')
+            logger.info('Run: npm run db:migrate')
+        } else {
+            logger.info(`Database initialized with ${result.length} tables`)
+        }
     } catch (error) {
-        console.error('Error creating database tables:', error)
-    } finally {
-        sqlite.close()
+        logger.error('Database initialization error:', error)
     }
 }
 
-initDatabase()
+export default db

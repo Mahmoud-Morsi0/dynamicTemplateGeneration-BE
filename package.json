@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc && npm run db:push",
+    "build": "tsc",
     "start": "node dist/server.js",
     "vercel-build": "tsc",
     "test": "vitest",
@@ -13,8 +13,10 @@
     "test:coverage": "vitest --coverage",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.ts",
+    "db:reset": "node scripts/reset-db.js",
+    "db:setup": "npm run db:reset && npm run db:migrate",
     "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate:sqlite",
+    "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {

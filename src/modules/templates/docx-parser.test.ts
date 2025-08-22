@@ -86,9 +86,9 @@ describe('DocxParser', () => {
         const result = parser.parse()
 
         expect(result.fields).toHaveLength(1)
-        expect(result.fields[0].type).toBe('array')
-        expect(result.fields[0].itemShape).toBeDefined()
-        expect(Object.keys(result.fields[0].itemShape || {})).toHaveLength(2)
+        expect(result.fields[0]?.type).toBe('array')
+        expect(result.fields[0]?.itemShape).toBeDefined()
+        expect(Object.keys(result.fields[0]?.itemShape || {})).toHaveLength(2)
     })
 
     it('should infer field types from key names', () => {

@@ -62,7 +62,7 @@ export class RenderService {
         }
 
         // Render the document
-        const renderer = await DocxRenderer.fromFile(templateVersion[0].filePath)
+        const renderer = await DocxRenderer.fromFile(templateVersion[0]!.filePath)
         const renderedBuffer = renderer.render(request.data)
 
         logger.info('Document rendered successfully', {

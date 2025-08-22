@@ -26,20 +26,20 @@ export const generateZodSchema = (fields: FieldSpec[]): z.ZodObject<any> => {
             case 'text':
                 fieldSchema = z.string()
                 if (field.required) {
-                    fieldSchema = fieldSchema.min(1, 'This field is required')
+                    fieldSchema = (fieldSchema as z.ZodString).min(1, 'This field is required')
                 }
                 if (field.maxLength) {
-                    fieldSchema = fieldSchema.max(field.maxLength)
+                    fieldSchema = (fieldSchema as z.ZodString).max(field.maxLength)
                 }
                 break
 
             case 'number':
                 fieldSchema = z.number()
                 if (field.min !== undefined) {
-                    fieldSchema = fieldSchema.min(field.min)
+                    fieldSchema = (fieldSchema as z.ZodNumber).min(field.min)
                 }
                 if (field.max !== undefined) {
-                    fieldSchema = fieldSchema.max(field.max)
+                    fieldSchema = (fieldSchema as z.ZodNumber).max(field.max)
                 }
                 break
 

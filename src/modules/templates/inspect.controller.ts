@@ -53,7 +53,7 @@ export class InspectController {
             const { version } = req.query
 
             const result = await this.inspectService.getTemplateVersion(
-                templateId,
+                templateId as string,
                 version ? parseInt(version as string, 10) : undefined
             )
 

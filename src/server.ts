@@ -16,16 +16,28 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
-        // Allow all localhost ports and local network IPs
-        if (origin.startsWith('http://localhost:') ||
-            origin.startsWith('http://127.0.0.1:') ||
-            origin.startsWith('http://192.168.') ||
-            origin.startsWith('http://10.') ||
-            origin.startsWith('http://172.')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+        // Allow configured CORS origin from env
+        if (origin === env.CORS_ORIGIN) {
+            return callback(null, true);
         }
+
+        // Allow all localhost ports and local network IPs in development
+        if (env.NODE_ENV === 'development') {
+            if (origin.startsWith('http://localhost:') ||
+                origin.startsWith('http://127.0.0.1:') ||
+                origin.startsWith('http://192.168.') ||
+                origin.startsWith('http://10.') ||
+                origin.startsWith('http://172.')) {
+                return callback(null, true);
+            }
+        }
+
+        // Allow Vercel preview and production domains
+        if (origin.includes('.vercel.app')) {
+            return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
 }))

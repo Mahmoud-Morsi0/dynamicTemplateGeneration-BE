@@ -13,47 +13,7 @@ const app = express()
 // Security middleware
 // app.use(helmet())
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        // Allow configured CORS origin from env
-        if (origin === env.CORS_ORIGIN) {
-            return callback(null, true);
-        }
-
-        // Allow all localhost ports and local network IPs in development
-        if (env.NODE_ENV === 'development') {
-            if (origin.startsWith('http://localhost:') ||
-                origin.startsWith('http://127.0.0.1:') ||
-                origin.startsWith('http://192.168.') ||
-                origin.startsWith('http://10.') ||
-                origin.startsWith('http://172.')) {
-                return callback(null, true);
-            }
-        }
-
-        // Allow Vercel preview and production domains
-        if (origin.includes('.vercel.app') || origin.includes('.vercel.com')) {
-            return callback(null, true);
-        }
-
-        // Allow custom domains in production
-        if (env.NODE_ENV === 'production') {
-            // Add your production domain patterns here
-            const allowedDomains: string[] = [
-                // Add your custom domains here
-                // 'https://yourdomain.com',
-                // 'https://www.yourdomain.com'
-            ];
-
-            if (allowedDomains.length > 0 && allowedDomains.some(domain => origin.startsWith(domain))) {
-                return callback(null, true);
-            }
-        }
-
-        callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Allow all origins
     credentials: true,
 }))
 
@@ -66,7 +26,7 @@ app.use('/api', apiLimiter)
 
 // Root endpoint
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'DynamicFormGen Backend API',
         status: 'running',
         version: '1.0.1',

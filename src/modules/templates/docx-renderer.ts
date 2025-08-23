@@ -188,7 +188,7 @@ export class DocxRenderer {
 
     private renderManually(data: Record<string, any>): Buffer {
         try {
-            logger.info('Performing manual text replacement rendering')
+            logger.info('Performing advanced manual text replacement rendering')
             logger.info('Data to replace:', JSON.stringify(data, null, 2))
 
             // Get the main document XML
@@ -209,50 +209,8 @@ export class DocxRenderer {
 
             let replacementCount = 0
 
-            // Replace all placeholders manually
-            // Handle both {variable} and {{variable}} formats, including advanced syntax
-            Object.entries(data).forEach(([key, value]) => {
-                const stringValue = String(value || '')
-                const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-                logger.info(`Processing key: "${key}" with value: "${stringValue}"`)
-
-                // Pattern 1: Simple single brace {key}
-                const singleBracePattern = new RegExp(`\\{\\s*${escapedKey}\\s*\\}`, 'g')
-
-                // Pattern 2: Simple double brace {{key}}
-                const doubleBracePattern = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'g')
-
-                // Pattern 3: Advanced double brace with modifiers {{key | ...}}
-                const advancedDoubleBracePattern = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\|[^}]*\\}\\}`, 'g')
-
-                // Count matches before replacement
-                const singleMatches = xmlContent.match(singleBracePattern) || []
-                const doubleMatches = xmlContent.match(doubleBracePattern) || []
-                const advancedMatches = xmlContent.match(advancedDoubleBracePattern) || []
-
-                logger.info(`Key "${key}": Found ${singleMatches.length} single, ${doubleMatches.length} double, ${advancedMatches.length} advanced matches`)
-
-                if (singleMatches.length > 0) logger.info(`Single matches for "${key}":`, singleMatches)
-                if (doubleMatches.length > 0) logger.info(`Double matches for "${key}":`, doubleMatches)
-                if (advancedMatches.length > 0) logger.info(`Advanced matches for "${key}":`, advancedMatches)
-
-                // Replace all patterns
-                const beforeLength = xmlContent.length
-                xmlContent = xmlContent.replace(singleBracePattern, stringValue)
-                xmlContent = xmlContent.replace(doubleBracePattern, stringValue)
-                xmlContent = xmlContent.replace(advancedDoubleBracePattern, stringValue)
-                const afterLength = xmlContent.length
-
-                if (beforeLength !== afterLength) {
-                    replacementCount++
-                    logger.info(`Successfully replaced "${key}" with "${stringValue}"`)
-                } else {
-                    logger.warn(`No replacements made for key "${key}"`)
-                }
-            })
-
-            logger.info(`Total successful replacements: ${replacementCount}`)
+            // Enhanced replacement with advanced format support
+            xmlContent = this.processAdvancedPlaceholders(xmlContent, data)
 
             // Update the document XML
             this.zip.file('word/document.xml', xmlContent)
@@ -263,12 +221,226 @@ export class DocxRenderer {
                 compression: 'DEFLATE',
             }) as Buffer
 
-            logger.info('Manual rendering completed successfully')
+            logger.info('Advanced manual rendering completed successfully')
             return buffer
         } catch (error) {
             logger.error('Manual rendering failed:', error)
             throw new Error(`Manual rendering failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
+    }
+
+    private processAdvancedPlaceholders(xmlContent: string, data: Record<string, any>): string {
+        let processedContent = xmlContent
+        let replacementCount = 0
+
+        // Process all placeholders (both simple and advanced)
+        const placeholderRegex = /\{\{\s*([^|}]+)(?:\s*\|\s*([^}]+))?\s*\}\}|\{([^{}|]+)\}/g
+
+        processedContent = processedContent.replace(placeholderRegex, (match, advancedKey, modifiers, simpleKey) => {
+            const key = (advancedKey || simpleKey || '').trim()
+
+            if (!key || !(key in data)) {
+                logger.warn(`Key "${key}" not found in data, leaving placeholder: ${match}`)
+                return match
+            }
+
+            const value = data[key]
+
+            // If no modifiers, just do simple replacement
+            if (!modifiers) {
+                const formattedValue = this.formatSimpleValue(value)
+                logger.info(`Simple replacement: ${match} -> ${formattedValue}`)
+                replacementCount++
+                return formattedValue
+            }
+
+            // Parse advanced modifiers
+            const parsedModifiers = this.parseModifiers(modifiers)
+            const formattedValue = this.formatAdvancedValue(value, parsedModifiers, key)
+
+            logger.info(`Advanced replacement: ${match} -> ${formattedValue}`)
+            logger.info(`Modifiers applied:`, parsedModifiers)
+            replacementCount++
+
+            return formattedValue
+        })
+
+        logger.info(`Total replacements made: ${replacementCount}`)
+        return processedContent
+    }
+
+    private parseModifiers(modifiers: string): Record<string, any> {
+        const parsed: Record<string, any> = {}
+        const modifierRegex = /(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/g
+        let match
+
+        while ((match = modifierRegex.exec(modifiers)) !== null) {
+            const [, key, quotedValue, singleQuotedValue, unquotedValue] = match
+            const value = quotedValue || singleQuotedValue || unquotedValue
+
+            switch (key) {
+                case 'type':
+                    parsed.type = value
+                    break
+                case 'label':
+                    parsed.label = value
+                    break
+                case 'required':
+                    parsed.required = value === 'true' || value === ''
+                    break
+                case 'maxLength':
+                    if (value) parsed.maxLength = parseInt(value, 10)
+                    break
+                case 'min':
+                    if (value) parsed.min = parseFloat(value)
+                    break
+                case 'max':
+                    if (value) parsed.max = parseFloat(value)
+                    break
+                case 'step':
+                    if (value) parsed.step = parseFloat(value)
+                    break
+                case 'options':
+                    if (value) parsed.options = value.split(',').map(opt => opt.trim())
+                    break
+                case 'default':
+                    if (value) parsed.default = value
+                    break
+                case 'width':
+                    if (value) parsed.width = parseInt(value, 10)
+                    break
+                case 'height':
+                    if (value) parsed.height = parseInt(value, 10)
+                    break
+            }
+        }
+
+        return parsed
+    }
+
+    private formatSimpleValue(value: any): string {
+        if (value === null || value === undefined) {
+            return ''
+        }
+        return String(value)
+    }
+
+    private formatAdvancedValue(value: any, modifiers: Record<string, any>, key: string): string {
+        // Handle null/undefined values
+        if (value === null || value === undefined) {
+            return modifiers.default || ''
+        }
+
+        const type = modifiers.type || 'text'
+
+        try {
+            switch (type) {
+                case 'number':
+                    return this.formatNumber(value, modifiers)
+
+                case 'date':
+                    return this.formatDate(value, modifiers)
+
+                case 'select':
+                    return this.formatSelect(value, modifiers)
+
+                case 'image':
+                    return this.formatImage(value, modifiers, key)
+
+                case 'text':
+                default:
+                    return this.formatText(value, modifiers)
+            }
+        } catch (error) {
+            logger.error(`Error formatting value for key "${key}":`, error)
+            return String(value) // Fallback to simple string conversion
+        }
+    }
+
+    private formatNumber(value: any, modifiers: Record<string, any>): string {
+        const num = parseFloat(String(value))
+
+        if (isNaN(num)) {
+            return modifiers.default || '0'
+        }
+
+        // Apply min/max constraints
+        let constrainedNum = num
+        if (modifiers.min !== undefined && constrainedNum < modifiers.min) {
+            constrainedNum = modifiers.min
+            logger.warn(`Value ${num} was below minimum ${modifiers.min}, using minimum`)
+        }
+        if (modifiers.max !== undefined && constrainedNum > modifiers.max) {
+            constrainedNum = modifiers.max
+            logger.warn(`Value ${num} was above maximum ${modifiers.max}, using maximum`)
+        }
+
+        // Apply step formatting if specified
+        if (modifiers.step !== undefined) {
+            const step = modifiers.step
+            if (step === 0.01) {
+                return constrainedNum.toFixed(2) // Currency format
+            } else if (step < 1) {
+                const decimals = Math.max(0, -Math.floor(Math.log10(step)))
+                return constrainedNum.toFixed(decimals)
+            }
+        }
+
+        return constrainedNum.toString()
+    }
+
+    private formatDate(value: any, modifiers: Record<string, any>): string {
+        try {
+            const date = new Date(value)
+            if (isNaN(date.getTime())) {
+                return modifiers.default || ''
+            }
+
+            // Format as YYYY-MM-DD by default
+            return date.toISOString().split('T')[0] || ''
+        } catch (error) {
+            return modifiers.default || ''
+        }
+    }
+
+    private formatSelect(value: any, modifiers: Record<string, any>): string {
+        const stringValue = String(value)
+
+        // Validate against options if provided
+        if (modifiers.options && Array.isArray(modifiers.options)) {
+            if (modifiers.options.includes(stringValue)) {
+                return stringValue
+            } else {
+                logger.warn(`Value "${stringValue}" not in options ${modifiers.options.join(', ')}, using default`)
+                return modifiers.default || modifiers.options[0] || ''
+            }
+        }
+
+        return stringValue
+    }
+
+    private formatImage(value: any, modifiers: Record<string, any>, key: string): string {
+        // For images, we return a placeholder text with dimensions info
+        const width = modifiers.width || 120
+        const height = modifiers.height || 40
+
+        if (value && typeof value === 'string' && value.startsWith('http')) {
+            return `[Image: ${value} (${width}x${height})]`
+        }
+
+        return `[${key} Image (${width}x${height})]`
+    }
+
+    private formatText(value: any, modifiers: Record<string, any>): string {
+        let text = String(value)
+
+        // Apply maxLength constraint
+        if (modifiers.maxLength && text.length > modifiers.maxLength) {
+            text = text.substring(0, modifiers.maxLength) + '...'
+            logger.warn(`Text truncated to ${modifiers.maxLength} characters`)
+        }
+
+        return text
     }
 
     public static async fromFile(filePath: string): Promise<DocxRenderer> {

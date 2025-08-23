@@ -1,6 +1,7 @@
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { FieldSpec } from '../../utils/zod'
+import { logger } from '../../utils/logger'
 
 interface ParsedPlaceholder {
     key: string
@@ -98,7 +99,7 @@ export class DocxParser {
                     if (value) result.label = value
                     break
                 case 'required':
-                    result.required = value === 'true' || value === ''
+                    result.required = value === 'true' || value === '' || value === undefined
                     break
                 case 'maxLength':
                     if (value) result.maxLength = parseInt(value, 10)
@@ -195,6 +196,87 @@ export class DocxParser {
         return loops
     }
 
+    private mergeFieldSpecs(existing: ParsedPlaceholder, newField: ParsedPlaceholder): ParsedPlaceholder {
+        // Create a merged field, prioritizing more specific/detailed specifications
+        const merged: ParsedPlaceholder = { ...existing }
+
+        // Type: prefer more specific types (advanced format over inferred)
+        if (newField.type && newField.type !== 'text') {
+            merged.type = newField.type
+        }
+
+        // Label: prefer non-empty labels
+        if (newField.label && newField.label.trim()) {
+            merged.label = newField.label
+        }
+
+        // Required: if either field is required, the merged field is required
+        if (newField.required !== undefined) {
+            merged.required = existing.required || newField.required
+        }
+
+        // Constraints: prefer more restrictive constraints
+        if (newField.maxLength !== undefined) {
+            merged.maxLength = existing.maxLength !== undefined
+                ? Math.min(existing.maxLength, newField.maxLength)
+                : newField.maxLength
+        }
+
+        if (newField.min !== undefined) {
+            merged.min = existing.min !== undefined
+                ? Math.max(existing.min, newField.min)
+                : newField.min
+        }
+
+        if (newField.max !== undefined) {
+            merged.max = existing.max !== undefined
+                ? Math.min(existing.max, newField.max)
+                : newField.max
+        }
+
+        // Step: prefer smaller (more precise) steps
+        if (newField.step !== undefined) {
+            merged.step = existing.step !== undefined
+                ? Math.min(existing.step, newField.step)
+                : newField.step
+        }
+
+        // Options: merge and deduplicate options
+        if (newField.options) {
+            if (existing.options) {
+                const combinedOptions = [...existing.options, ...newField.options]
+                merged.options = Array.from(new Set(combinedOptions))
+            } else {
+                merged.options = newField.options
+            }
+        }
+
+        // Default: prefer non-empty defaults
+        if (newField.default && newField.default.trim()) {
+            merged.default = newField.default
+        }
+
+        // Image dimensions: prefer larger dimensions
+        if (newField.width !== undefined) {
+            merged.width = existing.width !== undefined
+                ? Math.max(existing.width, newField.width)
+                : newField.width
+        }
+
+        if (newField.height !== undefined) {
+            merged.height = existing.height !== undefined
+                ? Math.max(existing.height, newField.height)
+                : newField.height
+        }
+
+        // Format: prefer specific formats
+        if (newField.format) {
+            merged.format = newField.format
+        }
+
+        return merged
+    }
+
     private convertToFieldSpec(parsed: ParsedPlaceholder): FieldSpec {
         const fieldSpec: FieldSpec = {
             key: parsed.key,
@@ -276,18 +358,33 @@ export class DocxParser {
                     placeholders.add(match[0])
                 }
 
-                // Parse all found placeholders
+                // Parse all found placeholders with enhanced deduplication
+                const fieldMap = new Map<string, ParsedPlaceholder>()
+
                 for (const placeholder of placeholders) {
                     try {
                         const parsed = this.parsePlaceholder(placeholder)
-                        if (parsed && parsed.key && !seenKeys.has(parsed.key)) {
-                            seenKeys.add(parsed.key)
-                            fields.push(this.convertToFieldSpec(parsed))
+                        if (parsed && parsed.key) {
+                            const existingField = fieldMap.get(parsed.key)
+                            if (existingField) {
+                                // Merge field specifications, prioritizing more detailed ones
+                                const mergedField = this.mergeFieldSpecs(existingField, parsed)
+                                fieldMap.set(parsed.key, mergedField)
+                                logger.info(`Merged duplicate field "${parsed.key}" with enhanced specifications`)
+                            } else {
+                                fieldMap.set(parsed.key, parsed)
+                            }
                         }
                     } catch (parseError) {
                         // Continue parsing other placeholders if one fails
                         console.warn('Failed to parse placeholder:', placeholder, parseError)
                     }
+                }
+
+                // Convert merged fields to FieldSpec
+                for (const [key, parsedField] of fieldMap) {
+                    fields.push(this.convertToFieldSpec(parsedField))
+                    seenKeys.add(key)
                 }
 
                 // Parse loops

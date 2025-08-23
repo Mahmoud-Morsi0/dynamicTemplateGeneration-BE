@@ -34,8 +34,22 @@ app.use(cors({
         }
 
         // Allow Vercel preview and production domains
-        if (origin.includes('.vercel.app')) {
+        if (origin.includes('.vercel.app') || origin.includes('.vercel.com')) {
             return callback(null, true);
+        }
+
+        // Allow custom domains in production
+        if (env.NODE_ENV === 'production') {
+            // Add your production domain patterns here
+            const allowedDomains: string[] = [
+                // Add your custom domains here
+                // 'https://yourdomain.com',
+                // 'https://www.yourdomain.com'
+            ];
+
+            if (allowedDomains.length > 0 && allowedDomains.some(domain => origin.startsWith(domain))) {
+                return callback(null, true);
+            }
         }
 
         callback(new Error('Not allowed by CORS'));
@@ -65,13 +79,18 @@ app.use('/api/templates', templatesRateLimiter, templatesRouter)
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-// Start server
-const PORT = env.PORT
-
-app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`)
+// Start server (only in non-serverless environments)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    const PORT = env.PORT
+    app.listen(PORT, () => {
+        logger.info(`Server running on port ${PORT}`)
+        logger.info(`Environment: ${env.NODE_ENV}`)
+        logger.info(`CORS Origin: ${env.CORS_ORIGIN}`)
+    })
+} else {
+    logger.info(`Server configured for serverless deployment`)
     logger.info(`Environment: ${env.NODE_ENV}`)
     logger.info(`CORS Origin: ${env.CORS_ORIGIN}`)
-})
+}
 
 export default app

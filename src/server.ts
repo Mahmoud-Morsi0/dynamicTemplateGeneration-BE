@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/error'
 import { apiLimiter, uploadLimiter } from './middleware/rateLimit'
 // import { upload } from './middleware/upload'
 import templatesRouter from './modules/templates/router'
+import authRouter from './modules/auth/auth.routes'
 
 const app = express()
 
@@ -55,6 +56,7 @@ app.get('/health', (req, res) => {
 })
 
 // API routes
+app.use('/api/auth', authRouter)
 app.use('/api/templates', uploadLimiter, templatesRouter)
 
 // Error handling

@@ -11,6 +11,8 @@ const envSchema = z.object({
     DB_URL: z.string().default('file:./storage/app.db'),
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+    JWT_SECRET: z.string().default('your-super-secret-jwt-key-change-in-production'),
+    JWT_EXPIRES_IN: z.string().default('7d'),
 })
 
 export const env = envSchema.parse(process.env)

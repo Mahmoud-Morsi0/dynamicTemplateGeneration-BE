@@ -11,6 +11,11 @@ export class RenderController {
 
     public async renderDocx(req: Request, res: Response): Promise<void> {
         try {
+            if (!req.user) {
+                res.status(401).json({ error: 'Authentication required' })
+                return
+            }
+
             const { templateId, fileHash, data } = req.body
 
             if (!data) {
@@ -32,10 +37,11 @@ export class RenderController {
             logger.info('Rendering document', {
                 templateId,
                 fileHash,
-                dataKeys: Object.keys(data)
+                dataKeys: Object.keys(data),
+                userId: req.user.userId
             })
 
-            const renderedBuffer = await this.renderService.renderDocument(renderRequest)
+            const renderedBuffer = await this.renderService.renderDocument(renderRequest, req.user.userId)
 
             // Set headers for file download
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')

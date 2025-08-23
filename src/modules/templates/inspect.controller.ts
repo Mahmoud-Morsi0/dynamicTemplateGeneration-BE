@@ -11,6 +11,11 @@ export class InspectController {
 
     public async inspectTemplate(req: Request, res: Response): Promise<void> {
         try {
+            if (!req.user) {
+                res.status(401).json({ error: 'Authentication required' })
+                return
+            }
+
             if (!req.file) {
                 res.status(400).json({ error: 'No file uploaded' })
                 return
@@ -21,13 +26,15 @@ export class InspectController {
             logger.info('Inspecting template', {
                 filename: originalname,
                 size: buffer.length,
-                mimetype
+                mimetype,
+                userId: req.user.userId
             })
 
             const result = await this.inspectService.inspectTemplate(
                 buffer,
                 originalname,
-                mimetype
+                mimetype,
+                req.user.userId
             )
 
             res.json({
@@ -49,11 +56,17 @@ export class InspectController {
 
     public async getTemplateSpec(req: Request, res: Response): Promise<void> {
         try {
+            if (!req.user) {
+                res.status(401).json({ error: 'Authentication required' })
+                return
+            }
+
             const { templateId } = req.params
             const { version } = req.query
 
             const result = await this.inspectService.getTemplateVersion(
                 templateId as string,
+                req.user.userId,
                 version ? parseInt(version as string, 10) : undefined
             )
 

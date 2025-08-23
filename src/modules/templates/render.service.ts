@@ -19,13 +19,13 @@ export class RenderService {
         this.inspectService = new InspectService()
     }
 
-    public async renderDocument(request: RenderRequest): Promise<Buffer> {
+    public async renderDocument(request: RenderRequest, userId: string): Promise<Buffer> {
         // Get template specification
         let templateSpec
         if (request.templateId) {
-            templateSpec = await this.inspectService.getTemplateVersion(request.templateId)
+            templateSpec = await this.inspectService.getTemplateVersion(request.templateId, userId)
         } else if (request.fileHash) {
-            templateSpec = await this.inspectService.getTemplateByHash(request.fileHash)
+            templateSpec = await this.inspectService.getTemplateByHash(request.fileHash, userId)
         } else {
             throw new Error('Either templateId or fileHash must be provided')
         }

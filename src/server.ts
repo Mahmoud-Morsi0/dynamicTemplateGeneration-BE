@@ -3,7 +3,7 @@ import cors from 'cors'
 import { env } from './config/env'
 import { logger } from './utils/logger'
 import { errorHandler, notFoundHandler } from './middleware/error'
-import { apiLimiter, uploadLimiter } from './middleware/rateLimit'
+import { apiLimiter, uploadLimiter, devUploadLimiter, authLimiter } from './middleware/rateLimit'
 // import { upload } from './middleware/upload'
 import templatesRouter from './modules/templates/router'
 import authRouter from './modules/auth/auth.routes'
@@ -56,8 +56,10 @@ app.get('/health', (req, res) => {
 })
 
 // API routes
-app.use('/api/auth', authRouter)
-app.use('/api/templates', uploadLimiter, templatesRouter)
+app.use('/api/auth', authLimiter, authRouter)
+// Use development-friendly rate limiter in development mode
+const templatesRateLimiter = env.NODE_ENV === 'development' ? devUploadLimiter : uploadLimiter
+app.use('/api/templates', templatesRateLimiter, templatesRouter)
 
 // Error handling
 app.use(notFoundHandler)

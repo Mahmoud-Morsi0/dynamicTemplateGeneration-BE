@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { InspectController } from './inspect.controller'
 import { RenderController } from './render.controller'
 import { UserTemplatesController } from './user-templates.controller'
+import { DeleteController } from './delete.controller'
 import { upload } from '../../middleware/upload'
 import { authenticateToken } from '../../middleware/auth'
 
@@ -9,6 +10,7 @@ const router = Router()
 const inspectController = new InspectController()
 const renderController = new RenderController()
 const userTemplatesController = new UserTemplatesController()
+const deleteController = new DeleteController()
 
 // All template routes require authentication
 router.use(authenticateToken)
@@ -24,5 +26,9 @@ router.post('/:templateId/render/pdf', renderController.renderPdf.bind(renderCon
 
 // User templates endpoints
 router.get('/', userTemplatesController.getUserTemplates.bind(userTemplatesController))
+
+// Template deletion endpoints
+router.delete('/:templateId', deleteController.deleteTemplate.bind(deleteController))
+router.delete('/:templateId/version/:version', deleteController.deleteTemplateVersion.bind(deleteController))
 
 export default router

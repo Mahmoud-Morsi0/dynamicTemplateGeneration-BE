@@ -66,7 +66,7 @@ app.use('/api', apiLimiter)
 
 // Root endpoint
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'DynamicFormGen Backend API',
         status: 'running',
         version: '1.0.0',

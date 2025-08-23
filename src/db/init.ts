@@ -15,14 +15,14 @@ function initializeDatabase() {
         // Check if we're in a serverless environment
         const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 
-                if (isServerless) {
+        if (isServerless) {
             logger.warn('Running in serverless environment - SQLite database will not persist')
             logger.warn('Consider using a cloud database for production (Turso, PlanetScale, Neon, Supabase)')
-            
+
             // Create in-memory database for serverless
             const sqlite = new Database(':memory:')
             dbInstance = drizzle(sqlite, { schema })
-            
+
             // Create tables automatically in serverless environment
             try {
                 sqlite.exec(`
@@ -63,7 +63,7 @@ function initializeDatabase() {
                 logger.error('Failed to create tables:', error)
                 throw error
             }
-            
+
             logger.info('Initialized in-memory SQLite database (data will not persist)')
             return dbInstance
         }

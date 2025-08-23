@@ -64,6 +64,21 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 // Rate limiting
 app.use('/api', apiLimiter)
 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'DynamicFormGen Backend API',
+        status: 'running',
+        version: '1.0.0',
+        endpoints: {
+            health: '/health',
+            auth: '/api/auth/*',
+            templates: '/api/templates/*'
+        },
+        timestamp: new Date().toISOString()
+    })
+})
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() })

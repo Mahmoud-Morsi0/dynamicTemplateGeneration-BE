@@ -80,7 +80,7 @@ app.use(notFoundHandler)
 app.use(errorHandler)
 
 // Start server (only in non-serverless environments)
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (!process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const PORT = env.PORT
     app.listen(PORT, () => {
         logger.info(`Server running on port ${PORT}`)
@@ -93,4 +93,6 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     logger.info(`CORS Origin: ${env.CORS_ORIGIN}`)
 }
 
+// Export for serverless platforms
+module.exports = app
 export default app

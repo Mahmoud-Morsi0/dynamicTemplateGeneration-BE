@@ -203,7 +203,7 @@ export class InspectService {
             .where(eq(templates.userId, userId))
             .orderBy(templateVersions.createdAt)
 
-        return userTemplates.map(template => ({
+        return userTemplates.map((template: any) => ({
             templateId: template.templateId,
             name: template.templateName,
             version: template.version,

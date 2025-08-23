@@ -452,4 +452,24 @@ export class DocxRenderer {
             throw new Error(`Failed to read template file: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
     }
+
+    public static fromBuffer(buffer: Buffer): DocxRenderer {
+        return new DocxRenderer(buffer)
+    }
+
+    public static async fromFileOrBuffer(filePath: string, fileBuffer?: string | null): Promise<DocxRenderer> {
+        // Check if we're in serverless environment and have a buffer
+        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+        
+        if (isServerless && fileBuffer) {
+            // Use stored buffer in serverless environment
+            const buffer = Buffer.from(fileBuffer, 'base64')
+            return new DocxRenderer(buffer)
+        } else if (!isServerless && filePath && !filePath.startsWith('virtual://')) {
+            // Use file path in local environment
+            return await DocxRenderer.fromFile(filePath)
+        } else {
+            throw new Error('No valid file source available for rendering')
+        }
+    }
 }

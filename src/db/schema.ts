@@ -26,6 +26,7 @@ export const templateVersions = sqliteTable('template_versions', {
     filePath: text('file_path').notNull(),
     fileHash: text('file_hash').notNull(),
     fieldsSpec: text('fields_spec').notNull(),
+    fileBuffer: text('file_buffer'), // Store base64 encoded buffer for serverless
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (table) => ({
     // Unique constraint: one user can only have one template with the same hash

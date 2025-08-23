@@ -47,7 +47,7 @@ export class RenderService {
             throw error
         }
 
-        // Get template file path
+        // Get template file path and buffer
         const templateVersion = await db
             .select()
             .from(templateVersions)
@@ -61,8 +61,11 @@ export class RenderService {
             throw new Error('Template file not found')
         }
 
-        // Render the document
-        const renderer = await DocxRenderer.fromFile(templateVersion[0]!.filePath)
+        // Render the document using file or buffer depending on environment
+        const renderer = await DocxRenderer.fromFileOrBuffer(
+            templateVersion[0]!.filePath,
+            templateVersion[0]!.fileBuffer
+        )
         const renderedBuffer = renderer.render(request.data)
 
         logger.info('Document rendered successfully', {

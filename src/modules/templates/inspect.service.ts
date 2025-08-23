@@ -52,6 +52,10 @@ export class InspectService {
 
         // Save file to storage
         const { filePath, fileHash } = await saveTemplateFile(buffer, originalName)
+        
+        // Check if we're in serverless environment to store buffer
+        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+        const fileBuffer = isServerless ? buffer.toString('base64') : null
 
         // Check if this user already has a template with the same hash
         const existingVersion = await db
@@ -99,6 +103,7 @@ export class InspectService {
             filePath,
             fileHash,
             fieldsSpec: JSON.stringify(fields),
+            fileBuffer,
         })
 
         logger.info('Template inspected and saved', { templateId, fileHash, userId })

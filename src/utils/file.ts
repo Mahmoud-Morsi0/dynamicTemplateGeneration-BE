@@ -17,6 +17,18 @@ export const saveTemplateFile = async (buffer: Buffer, originalName: string): Pr
     const sanitizedName = sanitizeFilename(originalName)
     const extension = path.extname(sanitizedName)
     const fileName = `${uuidv4()}${extension}`
+
+    // Check if we're in a serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+
+    if (isServerless) {
+        // In serverless environment, we can't save files to disk
+        // Return a virtual path - the buffer will be stored in database
+        const virtualPath = `virtual://templates/${fileName}`
+        return { filePath: virtualPath, fileHash }
+    }
+
+    // Local development - save to disk
     const filePath = path.join(env.STORAGE_DIR, 'templates', fileName)
 
     // Ensure storage directory exists

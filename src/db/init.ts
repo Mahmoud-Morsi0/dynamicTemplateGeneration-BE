@@ -52,6 +52,7 @@ function initializeDatabase() {
                         file_path TEXT NOT NULL,
                         file_hash TEXT NOT NULL,
                         fields_spec TEXT NOT NULL,
+                        file_buffer TEXT,
                         created_at INTEGER NOT NULL
                     );
 

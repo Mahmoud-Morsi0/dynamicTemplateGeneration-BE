@@ -14,7 +14,7 @@
   ],
   "functions": {
     "src/server.ts": {
-      "maxDuration": 1000
+      "maxDuration": 500
     }
   },
   "env": {

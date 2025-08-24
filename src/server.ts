@@ -42,8 +42,8 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
+    res.json({
+        status: 'ok',
         timestamp: new Date().toISOString(),
         keepAlive: keepAliveManager.getStatus()
     })
@@ -51,8 +51,8 @@ app.get('/health', (req, res) => {
 
 // Keep-alive ping endpoint (internal use)
 app.get('/ping', (req, res) => {
-    res.json({ 
-        pong: true, 
+    res.json({
+        pong: true,
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     })

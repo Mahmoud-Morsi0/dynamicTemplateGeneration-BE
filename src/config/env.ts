@@ -13,6 +13,9 @@ const envSchema = z.object({
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters for security').default('your-super-secret-jwt-key-change-in-production'),
     JWT_EXPIRES_IN: z.string().default('7d'),
+    // Turso database configuration
+    TURSO_DATABASE_URL: z.string().optional(),
+    TURSO_AUTH_TOKEN: z.string().optional(),
     // Vercel-specific environment variables
     VERCEL: z.string().optional(),
     VERCEL_URL: z.string().optional(),

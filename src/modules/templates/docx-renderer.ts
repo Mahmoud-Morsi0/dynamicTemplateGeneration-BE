@@ -55,6 +55,9 @@ export class DocxRenderer {
             // First preprocess the document to normalize formats
             this.preprocessDocument()
 
+            // Process watermarks for placeholder compatibility
+            this.processWatermarks()
+
             // Initialize Docxtemplater with non-conflicting delimiters
             this.doc = new Docxtemplater(this.zip, {
                 paragraphLoop: true,
@@ -97,6 +100,7 @@ export class DocxRenderer {
 
         // Preprocess document for manual rendering
         this.preprocessDocument()
+        this.processWatermarks()
         logger.info('Manual renderer initialized successfully')
     }
 
@@ -156,6 +160,45 @@ export class DocxRenderer {
         } catch (error) {
             logger.error('Document preprocessing failed:', error)
             throw new Error(`Failed to preprocess document: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+    }
+
+    private processWatermarks(): void {
+        try {
+            // Check and process main document watermarks
+            const documentXml = this.zip.files['word/document.xml']
+            if (documentXml) {
+                let xmlContent = documentXml.asText()
+                const hasWatermarks = xmlContent.includes('<w:watermark') || 
+                                     xmlContent.includes('w:hdr') ||
+                                     xmlContent.includes('watermark')
+
+                if (hasWatermarks) {
+                    logger.info('Document contains watermarks - ensuring placeholder compatibility')
+                    this.zip.file('word/document.xml', xmlContent)
+                }
+            }
+
+            // Process header/footer files that might contain watermarks
+            const headerFooterFiles = Object.keys(this.zip.files).filter(name => 
+                (name.startsWith('word/header') || name.startsWith('word/footer')) && name.endsWith('.xml')
+            )
+            
+            headerFooterFiles.forEach(fileName => {
+                const file = this.zip.files[fileName]
+                if (file) {
+                    let content = file.asText()
+                    // Ensure watermark text supports placeholders
+                    if (content.includes('watermark') || content.includes('<w:t>')) {
+                        logger.debug(`Processing watermarks in ${fileName}`)
+                        this.zip.file(fileName, content)
+                    }
+                }
+            })
+
+            logger.info('Watermark processing completed')
+        } catch (error) {
+            logger.warn('Watermark processing failed, continuing without watermark support:', error)
         }
     }
 

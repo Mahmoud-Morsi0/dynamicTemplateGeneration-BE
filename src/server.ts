@@ -7,6 +7,7 @@ import { apiLimiter, uploadLimiter, devUploadLimiter, authLimiter } from './midd
 // import { upload } from './middleware/upload'
 import templatesRouter from './modules/templates/router'
 import authRouter from './modules/auth/auth.routes'
+import { keepAliveManager } from './utils/keepAlive'
 
 const app = express()
 
@@ -41,7 +42,20 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() })
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        keepAlive: keepAliveManager.getStatus()
+    })
+})
+
+// Keep-alive ping endpoint (internal use)
+app.get('/ping', (req, res) => {
+    res.json({ 
+        pong: true, 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    })
 })
 
 // API routes

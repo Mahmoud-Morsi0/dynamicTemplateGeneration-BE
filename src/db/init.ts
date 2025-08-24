@@ -25,6 +25,9 @@ function initializeDatabase() {
 
             // Create tables automatically in serverless environment
             try {
+                // Disable foreign key constraints for in-memory database
+                sqlite.pragma('foreign_keys = OFF')
+                
                 sqlite.exec(`
                     CREATE TABLE IF NOT EXISTS users (
                         id TEXT PRIMARY KEY,
@@ -37,7 +40,7 @@ function initializeDatabase() {
 
                     CREATE TABLE IF NOT EXISTS templates (
                         id TEXT PRIMARY KEY,
-                        user_id TEXT NOT NULL REFERENCES users(id),
+                        user_id TEXT NOT NULL,
                         name TEXT NOT NULL,
                         language TEXT NOT NULL DEFAULT 'en',
                         created_at INTEGER NOT NULL,
@@ -46,8 +49,8 @@ function initializeDatabase() {
 
                     CREATE TABLE IF NOT EXISTS template_versions (
                         id TEXT PRIMARY KEY,
-                        template_id TEXT NOT NULL REFERENCES templates(id),
-                        user_id TEXT NOT NULL REFERENCES users(id),
+                        template_id TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
                         version INTEGER NOT NULL DEFAULT 1,
                         file_path TEXT NOT NULL,
                         file_hash TEXT NOT NULL,
@@ -59,6 +62,8 @@ function initializeDatabase() {
                     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_file_hash 
                     ON template_versions(user_id, file_hash);
                 `)
+                
+                logger.info('Foreign key constraints disabled for serverless environment')
                 logger.info('Created database tables for serverless environment')
             } catch (error) {
                 logger.error('Failed to create tables:', error)

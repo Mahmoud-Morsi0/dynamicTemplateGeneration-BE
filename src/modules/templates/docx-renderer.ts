@@ -169,9 +169,9 @@ export class DocxRenderer {
             const documentXml = this.zip.files['word/document.xml']
             if (documentXml) {
                 let xmlContent = documentXml.asText()
-                const hasWatermarks = xmlContent.includes('<w:watermark') || 
-                                     xmlContent.includes('w:hdr') ||
-                                     xmlContent.includes('watermark')
+                const hasWatermarks = xmlContent.includes('<w:watermark') ||
+                    xmlContent.includes('w:hdr') ||
+                    xmlContent.includes('watermark')
 
                 if (hasWatermarks) {
                     logger.info('Document contains watermarks - ensuring placeholder compatibility')
@@ -180,10 +180,10 @@ export class DocxRenderer {
             }
 
             // Process header/footer files that might contain watermarks
-            const headerFooterFiles = Object.keys(this.zip.files).filter(name => 
+            const headerFooterFiles = Object.keys(this.zip.files).filter(name =>
                 (name.startsWith('word/header') || name.startsWith('word/footer')) && name.endsWith('.xml')
             )
-            
+
             headerFooterFiles.forEach(fileName => {
                 const file = this.zip.files[fileName]
                 if (file) {
@@ -503,7 +503,7 @@ export class DocxRenderer {
     public static async fromFileOrBuffer(filePath: string, fileBuffer?: string | null): Promise<DocxRenderer> {
         // Check if we're in serverless environment and have a buffer
         const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-        
+
         if (isServerless && fileBuffer) {
             // Use stored buffer in serverless environment
             const buffer = Buffer.from(fileBuffer, 'base64')

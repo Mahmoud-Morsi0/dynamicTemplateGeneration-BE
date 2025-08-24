@@ -27,7 +27,7 @@ function initializeDatabase() {
             try {
                 // Disable foreign key constraints for in-memory database
                 sqlite.pragma('foreign_keys = OFF')
-                
+
                 sqlite.exec(`
                     CREATE TABLE IF NOT EXISTS users (
                         id TEXT PRIMARY KEY,
@@ -62,7 +62,7 @@ function initializeDatabase() {
                     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_file_hash 
                     ON template_versions(user_id, file_hash);
                 `)
-                
+
                 logger.info('Foreign key constraints disabled for serverless environment')
                 logger.info('Created database tables for serverless environment')
             } catch (error) {

@@ -17,18 +17,18 @@ function initializeDatabase() {
         // Check if Turso credentials are available
         if (env.TURSO_DATABASE_URL && env.TURSO_AUTH_TOKEN) {
             logger.info('Initializing Turso cloud database connection')
-            
+
             // Create Turso client
             const tursoClient = createClient({
                 url: env.TURSO_DATABASE_URL,
                 authToken: env.TURSO_AUTH_TOKEN,
             })
-            
+
             dbInstance = drizzleLibsql(tursoClient, { schema })
-            
+
             // Create tables in Turso database
             createTursoTables(tursoClient)
-            
+
             logger.info('✅ Turso cloud database initialized successfully')
             logger.info('🎉 Data will persist permanently!')
             return dbInstance
@@ -41,14 +41,14 @@ function initializeDatabase() {
             logger.warn('⚠️ Running in serverless environment without cloud database')
             logger.warn('⚠️ Using in-memory database - data will not persist')
             logger.warn('💡 Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for persistent storage')
-            
+
             // Create in-memory database for serverless
             const sqlite = new Database(':memory:')
             dbInstance = drizzle(sqlite, { schema })
-            
+
             // Create tables automatically in serverless environment
             createInMemoryTables(sqlite)
-            
+
             logger.info('Initialized in-memory SQLite database (data will not persist)')
             return dbInstance
         }
@@ -86,7 +86,7 @@ function initializeDatabase() {
 async function createTursoTables(client: any) {
     try {
         logger.info('Creating tables in Turso database...')
-        
+
         await client.execute(`
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
@@ -139,7 +139,7 @@ function createInMemoryTables(sqlite: any) {
     try {
         // Disable foreign key constraints for in-memory database
         sqlite.pragma('foreign_keys = OFF')
-        
+
         sqlite.exec(`
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
@@ -174,7 +174,7 @@ function createInMemoryTables(sqlite: any) {
             CREATE UNIQUE INDEX IF NOT EXISTS unique_user_file_hash 
             ON template_versions(user_id, file_hash);
         `)
-        
+
         logger.info('In-memory database tables created')
     } catch (error) {
         logger.error('Failed to create in-memory tables:', error)

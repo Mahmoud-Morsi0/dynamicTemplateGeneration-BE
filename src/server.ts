@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
     res.json({
         message: 'DynamicFormGen Backend API',
         status: 'running',
-        version: '1.0.1',
+        version: '1.0.2',
         endpoints: {
             health: '/health',
             auth: '/api/auth/*',
